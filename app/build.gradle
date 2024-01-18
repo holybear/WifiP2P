@@ -1,0 +1,92 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+def keyAliasExt = "leavesCZY"
+def keyPasswordExt = "123456"
+def storePasswordExt = "123456"
+
+android {
+    namespace 'github.leavesczy.wifip2p'
+    compileSdk 33
+    defaultConfig {
+        applicationId "github.leavesczy.wifip2p"
+        minSdk 23
+        targetSdk 30
+        versionCode 11
+        versionName "1.1"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    signingConfigs {
+        releaseConfig {
+            storeFile file(rootDir.absolutePath + File.separator + "key.jks")
+            keyAlias keyAliasExt.toString()
+            storePassword keyPasswordExt.toString()
+            keyPassword storePasswordExt.toString()
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.releaseConfig
+            minifyEnabled false
+            shrinkResources false
+            zipAlignEnabled false
+            debuggable true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+        release {
+            signingConfig signingConfigs.releaseConfig
+            minifyEnabled true
+            shrinkResources true
+            zipAlignEnabled true
+            debuggable false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    viewBinding {
+        enabled = true
+    }
+}
+
+dependencies {
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.4.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'androidx.activity:activity-ktx:1.6.0'
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'io.coil-kt:coil:2.2.1'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2'
+
+    //rx
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.9'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.2.2'
+    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.4.0'
+   // implementation 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0'
+    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
+    implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2-native-mt'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
+
+}
