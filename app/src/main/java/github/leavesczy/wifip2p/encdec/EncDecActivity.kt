@@ -2,22 +2,28 @@ package github.leavesczy.wifip2p.encdec
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.MediaController
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
+import android.widget.VideoView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.registerForActivityResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
+import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -43,32 +49,38 @@ class EncDecActivity : AppCompatActivity() {
     lateinit var progressBar: ProgressBar
     lateinit var sourceDir: File
     lateinit var destinationDir: File
-
+    lateinit var videoView: VideoView
+    lateinit var playerTargetLocaiton: File
+    val PICK_VIDEO_REQUEST = 989
     // This property is only valid between onCreateView and
     // onDestroyView.
 
     lateinit var layout: androidx.constraintlayout.widget.ConstraintLayout
 
-    private var result = MutableLiveData<Boolean>()
+    private var result = MutableLiveData<String>()
+
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_enc_dec)
+
         val binding = ActivityEncDecBinding.inflate(layoutInflater)
+        videoView = binding.idVideoView
         setContentView(binding.root)
-        layout=findViewById(R.id.layout) as ConstraintLayout
+        layout = findViewById(R.id.layout) as ConstraintLayout
         requestReadExternalStoragePermission()
         binding.buttonFirst.setOnClickListener {
-            val  videoView =  binding.idVideoView
-            videoView.visibility=View.VISIBLE
+
+            videoView.visibility = View.VISIBLE
             // creating and initializing variable for media controller on below line.
             val mediaController = MediaController(this)
             // setting media controller anchor view to video view on below line.
             mediaController.setAnchorView(videoView)
             // on below line we are getting uri for the video file which we are adding in our project.
-
-            val targetDir =  File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "edumia_video_dec");
-            val targetLocation = File(targetDir ,"/hbVideos_dec.mp4")
+            val mediaFile =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath
+            val targetDir = File(mediaFile, "edumia_video_dec");
+            val targetLocation = File(targetDir, "/hbVideos_dec.mp4")
 
             val uri: Uri = Uri.parse(targetLocation.toString())
             //on below line we are setting media controller for our video view.
@@ -80,6 +92,7 @@ class EncDecActivity : AppCompatActivity() {
             // on below line we are calling start  method to start our video view.
             videoView.start();
         }
+        binding.buttonFirst.visibility=View.GONE
         binding.buttonSecond.setOnClickListener {
             progressDialogueSHow()
             val job = CoroutineScope(Dispatchers.Default).launch {
@@ -95,24 +108,65 @@ class EncDecActivity : AppCompatActivity() {
         }
         binding.buttonThird.setOnClickListener {
             progressDialogueSHow()
-            val job = CoroutineScope(Dispatchers.Default).launch {
-                copyDirectory()
-            }
+            val mediaFolderPath =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath
+
+            //dirRequest.launch(mediaFolderPath.toUri())
+            openFilePicker()
         }
-        result.observe(this, Observer {
-            if (it) {
+
+
+
+        result.observe(this, Observer { status ->
+            if (status == "loading") {
                 progressBar.visibility = View.VISIBLE
                 binding.buttonSecond.isEnabled = false
                 binding.buttonThird.isEnabled = false
-            } else {
+            } else if (status == "loadingEnd") {
                 progressBar.visibility = View.GONE
                 binding.buttonSecond.isEnabled = true
                 binding.buttonThird.isEnabled = true
-                binding.idVideoView.visibility=View.VISIBLE
+                binding.idVideoView.visibility = View.VISIBLE
+            } else if (status == "readytoplay") {
+                progressBar.visibility = View.GONE
+                binding.buttonSecond.isEnabled = true
+                binding.buttonThird.isEnabled = true
+                binding.idVideoView.visibility = View.VISIBLE
+                playMediaFile(playerTargetLocaiton)
             }
         })
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK && data != null) {
+            //val treeUri = data.data.data
+            // Store the tree URI for future use
+
+        }
+    }
+
+    private fun openFilePicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "*/*"  // Adjust the MIME type if needed
+        }
+        filePickerLauncher.launch(intent)
+    }
+
+    private val filePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK && result.data != null) {
+                val selectedFileUri = result.data?.data ?: return@registerForActivityResult
+
+                val job = CoroutineScope(Dispatchers.Default).launch {
+
+                    val listofurls = selectedFileUri.toString().split("%2F")
+                    copyDirectory(listofurls[listofurls.size - 1])
+                }
+                // Access the selected file using the URI
+                // ... (your code to handle the file)
+            }
+        }
 
     private suspend fun download(ob: FileDownloadStatus) {
 
@@ -120,12 +174,13 @@ class EncDecActivity : AppCompatActivity() {
              File(context?.filesDir.toString() + "/edumia_video-enc/")*/
 
         //val decfileDir =  File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "edumia_video_enc");
-        val mediaFolderPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath
+        val mediaFolderPath =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath
         // Create a new file object for the folder.
         val decfileDir = File(mediaFolderPath, "edumia_video_enc")
         if (!decfileDir.exists()) {
-            val l=  decfileDir.mkdir()
-            Log.d("test","log")
+            val l = decfileDir.mkdir()
+            Log.d("test", "log")
         } else {
 
         }
@@ -271,15 +326,23 @@ class EncDecActivity : AppCompatActivity() {
 
 
     @Throws(IOException::class)
-    fun copyDirectory() {
+    fun copyDirectory(filepath: String) {
 
-        val source = sourceDir
+        val mediaFolderPath1 =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath
+        val targetDir1 = File(mediaFolderPath1, "edumia_video_enc");
+        val source1 = File(targetDir1, filepath)
+        val source = source1
         //val targetDir=  File(context?.filesDir.toString() + "/edumia_video_dec/")
         /* val targetLocation =
          File(context?.filesDir.toString() + "/edumia_video-dec/hbVideos_dec.mp4")*/
 
 
-        val targetDir =  File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "edumia_video_dec");
+        val mediaFolderPath =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath
+
+
+        val targetDir = File(mediaFolderPath, "edumia_video_dec");
 
 
         if (!targetDir.exists()) {
@@ -288,8 +351,9 @@ class EncDecActivity : AppCompatActivity() {
             targetDir.delete()
             targetDir.mkdir()
         }
-        val targetLocation = File(targetDir ,"/hbVideos_dec.mp4")
-        destinationDir=targetLocation
+        val targetLocation = File(targetDir, "/hbVideos_dec.mp4")
+        //  val targetLocation = File(filepath)
+        destinationDir = targetLocation
         val `in`: InputStream = FileInputStream(source)
         val out: OutputStream = FileOutputStream(targetLocation)
 
@@ -307,6 +371,28 @@ class EncDecActivity : AppCompatActivity() {
             progressadialogueHide()
 
         }
+        //  playMediaFile(targetLocation)
+        playerTargetLocaiton = targetLocation
+        result.postValue("readytoplay")
+
+    }
+
+    fun playMediaFile(targetLocation: File) {
+        videoView.visibility = View.VISIBLE
+        // creating and initializing variable for media controller on below line.
+        val mediaController = MediaController(this)
+        // setting media controller anchor view to video view on below line.
+        mediaController.setAnchorView(videoView)
+        // on below line we are getting uri for the video file which we are adding in our project.
+        val uri: Uri = Uri.parse(targetLocation.toString())
+        //on below line we are setting media controller for our video view.
+        videoView.setMediaController(mediaController);
+        // on below line we are setting video uri for our video view.
+        videoView.setVideoURI(uri);
+        // on below line we are requesting focus for our video view.
+        videoView.requestFocus();
+        // on below line we are calling start  method to start our video view.
+        videoView.start();
     }
 
 
@@ -315,12 +401,12 @@ class EncDecActivity : AppCompatActivity() {
         val params = RelativeLayout.LayoutParams(100, 100)
         params.addRule(RelativeLayout.CENTER_IN_PARENT)
         layout.addView(progressBar, params)
-        result.postValue(true)
+        result.postValue("loading")
     }
 
     suspend fun progressadialogueHide() {
 
-        result.postValue(false)
+        result.postValue("loadingEnd")
 
     }
 
@@ -372,6 +458,7 @@ class EncDecActivity : AppCompatActivity() {
                     // Permission Granted
                 }
             }
+
             shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE) -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     if (Environment.isExternalStorageManager()) {
@@ -392,7 +479,7 @@ class EncDecActivity : AppCompatActivity() {
                 .setPositiveButton("open settings") { dialog, _ ->
                     val intent = Intent().apply {
                         action = Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-                       // data = Uri.fromParts("package", this, null)
+                        // data = Uri.fromParts("package", this, null)
                     }
                     dialog.dismiss()
                     android11PlusSettingResultLauncher.launch(intent)

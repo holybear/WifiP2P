@@ -59,7 +59,8 @@
         </activity>>
         <activity
             android:name=".encdec.EncDecActivity"
-            android:exported="true"></activity>
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation|uiMode"
