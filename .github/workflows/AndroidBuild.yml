@@ -19,14 +19,13 @@ jobs:
           distribution: 'adopt'
 
       - name : Build with Gradle
-        run : ./gradlew build
+        run : ./gradlew build assembleAndroidTest
 
       - name: Run tests
         uses: MarathonLabs/action-test@0.3.0
         with:
             apiKey: ${{ secrets.MARATHON }}
             application: app/build/outputs/apk/debug/app-debug.apk
-            testApplication: "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
             platform: Android
             githubToken: ${{ secrets.GIT_TOKEN }}
 
