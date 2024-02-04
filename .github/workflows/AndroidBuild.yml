@@ -28,7 +28,7 @@ jobs:
             application: app/build/outputs/apk/debug/app-debug.apk
             testApplication: app/build/outputs/apk/debug/app-debug.apk
             platform: Android
-            githubToken: ${{ secrets.WIFY_EDU_MARATHON_TOKEN}}
+            githubToken: ${{ secrets.eduwify }}
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4.1.0
