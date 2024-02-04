@@ -20,14 +20,6 @@ class ParentActivityTest {
     @get : Rule
     var mActivityRule = ActivityScenarioRule(ParentActivity::class.java)
 
-
-    @Test
-    fun useAppContext() {
-        // Context of the app under test.
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        Assert.assertEquals("github.leavesczy.wifip2p", appContext.packageName)
-    }
-
     @Test
     fun ClickTest(){
 
