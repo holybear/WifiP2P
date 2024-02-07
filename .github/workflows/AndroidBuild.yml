@@ -22,6 +22,7 @@ jobs:
         run : ./gradlew assembleDebug assembleAndroidTest
 
 
+      - name: UI Test
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
