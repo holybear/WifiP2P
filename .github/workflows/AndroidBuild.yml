@@ -26,15 +26,24 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          
+      - name: Launch emulator
+        run: |
+          emulator -avd avd-5544 -no-window &  # Replace with your AVD name
+          sleep 30  # Adjust sleep time based on emulator startup
 
-      - name: UI Test
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 29
-          target: default
-          arch: x86
-          profile: Nexus 6
-          script: ./gradlew connectedCheck --stacktrace
+      - name: Run tests
+        run: ./gradlew connectedCheck
+
+      # - name: UI Test
+      #   uses: reactivecircus/android-emulator-runner@v2
+      #   with:
+      #     api-level: 29
+      #     target: default
+      #     arch: x86
+      #     profile: Nexus 6
+      #     script: ./gradlew connectedCheck --stacktrace
+      
 
       - name: Unit Test
         run: ./gradlew testDebugUnitTest
