@@ -31,6 +31,7 @@ jobs:
         run: |
           emulator -avd avd-5544 -no-window &  # Replace with your AVD name
           sleep 120  # Adjust sleep time based on emulator startup
+          ./gradlew connectedCheck
 
       - name: Run tests
         run: ./gradlew connectedCheck
