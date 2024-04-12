@@ -26,6 +26,14 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/checkout@v1
+      - uses: malinskiy/action-android/emulator-run-cmd@release/0.1.6
+        with:
+          cmd: ./gradlew integrationTest
+          api: 25
+          tag: default
+          abi: x86
           
       # - name: Launch emulator
       #   run: |
@@ -42,19 +50,21 @@ jobs:
       # - name: Run tests (use `adb devices` to verify connection)
       #   run: ./gradlew connectedCheck
 
-      - name: Run Instrumentation Tests
-        uses: malinskiy/action-android/emulator-run-cmd@release/0.0.3
-        with:
-          cmd: ./gradlew connectedCheck --stacktrace
-          api: 23
-          tag: default
-          abi: x86
+      # - name: Run Instrumentation Tests
+      #   uses: malinskiy/action-android/emulator-run-cmd@release/0.0.3
+      #   with:
+      #     cmd: ./gradlew connectedCheck --stacktrace
+      #     api: 23
+      #     tag: default
+      #     abi: x86
 
-      - name: Reclaim Memory
-        run: ./gradlew --stop && jps|grep -E 'KotlinCompileDaemon|GradleDaemon'| awk '{print $1}'| xargs kill -9
+      # - name: Reclaim Memory
+      #   run: ./gradlew --stop && jps|grep -E 'KotlinCompileDaemon|GradleDaemon'| awk '{print $1}'| xargs kill -9
 
-      - name: Run tests
-        run: ./gradlew connectedCheck
+      # - name: Run tests
+      #   run: ./gradlew connectedCheck
+     
+
 
       - name: UI Test
         uses: reactivecircus/android-emulator-runner@v2
