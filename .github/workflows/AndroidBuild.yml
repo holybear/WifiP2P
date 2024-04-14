@@ -26,6 +26,28 @@ jobs:
         with:
           name: EduFileShare.apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: test install-sdk
+        run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
+        working-directory: install-sdk
+      - name: test emulator-run-cmd
+        run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
+        working-directory: emulator-run-cmd
+      - uses: ./install-sdk
+        name: install sdk
+      - run: sdkmanager platform-tools
+      - run: adb devices
+      - name: Enable KVM
+        run: |
+         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+         sudo udevadm control --reload-rules
+         sudo udevadm trigger --name-match=kvm
+      - uses: ./emulator-run-cmd
+        with:
+         api: 25
+         tag: default
+         abi: x86
+         cmd: adb shell getprop
+         bootTimeout: 500
 
 
 # name: "Test"
@@ -40,28 +62,7 @@ jobs:
 #       with:
 #         distribution: 'temurin'
 #         java-version: '17'
-#     - name: test install-sdk
-#       run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
-#       working-directory: install-sdk
-#     - name: test emulator-run-cmd
-#       run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
-#       working-directory: emulator-run-cmd
-#     - uses: ./install-sdk
-#       name: install sdk
-#     - run: sdkmanager platform-tools
-#     - run: adb devices
-#     - name: Enable KVM
-#       run: |
-#         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-#         sudo udevadm control --reload-rules
-#         sudo udevadm trigger --name-match=kvm
-#     - uses: ./emulator-run-cmd
-#       with:
-#         api: 25
-#         tag: default
-#         abi: x86
-#         cmd: adb shell getprop
-#         bootTimeout: 500
+
 #     - uses: actions/upload-artifact@v1
 #       with:
 #         name: logcat
@@ -187,11 +188,11 @@ jobs:
         uses: holybear/android-test-report-action@v1.0.0
         if: ${{ always() }}
 
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4.1.0
-        with:
-          name: EduFileShare.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+      # - name: Upload a Build Artifact
+      #   uses: actions/upload-artifact@v4.1.0
+      #   with:
+      #     name: EduFileShare.apk
+      #     path: app/build/outputs/apk/debug/app-debug.apk
 
 
 
