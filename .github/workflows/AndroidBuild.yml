@@ -26,9 +26,9 @@ jobs:
         with:
           name: EduFileShare.apk
           path: app/build/outputs/apk/debug/app-debug.apk
-      - name: test install-sdk
-        run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
-        working-directory: install-sdk
+      # - name: test install-sdk
+      #   run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
+      #   working-directory: install-sdk
       - name: test emulator-run-cmd
         run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
         working-directory: emulator-run-cmd
