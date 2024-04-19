@@ -33,13 +33,13 @@ jobs:
       # - name: Validate build
       #   run: ./gradlew Sample:assemble
   
-      - name: Run Screenshot Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 29
-          target: google_apis
-          profile: pixel_3a
-          script: ./gradlew connectedCheck
+      # - name: Run Screenshot Tests
+      #   uses: reactivecircus/android-emulator-runner@v2
+      #   with:
+      #     api-level: 29
+      #     target: google_apis
+      #     profile: pixel_3a
+      #     script: ./gradlew connectedCheck
           
       # - name: test install-sdk
       #   run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
@@ -57,14 +57,13 @@ jobs:
          sudo udevadm control --reload-rules
          sudo udevadm trigger --name-match=kvm
       - uses: ./emulator-run-cmd
+      - name: Run Screenshot Tests
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-         api: 25
-         tag: default
-         abi: x86
-         cmd: adb shell getprop
-         bootTimeout: 500
-      - name : UI test
-        run : ./gradlew connectedCheck
+          api-level: 29
+          target: google_apis
+          profile: pixel_3a
+          script: ./gradlew connectedCheck
 
 
 # name: "Test"
