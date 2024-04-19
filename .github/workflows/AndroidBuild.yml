@@ -26,6 +26,21 @@ jobs:
         with:
           name: EduFileShare.apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Fetch Sources
+        uses: actions/checkout@v2
+  
+      - name: Validate build
+        run: ./gradlew Sample:assemble
+  
+      - name: Run Screenshot Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: google_apis
+          profile: pixel_3a
+          script: ./github_action_emulator_command.sh Sample:screenshotTest
+          
       # - name: test install-sdk
       #   run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
       #   working-directory: install-sdk
