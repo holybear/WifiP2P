@@ -48,6 +48,8 @@ jobs:
          abi: x86
          cmd: adb shell getprop
          bootTimeout: 500
+      - name : UI test
+        run : ./gradlew connectedCheck
 
 
 # name: "Test"
