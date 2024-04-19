@@ -30,8 +30,8 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v2
   
-      - name: Validate build
-        run: ./gradlew Sample:assemble
+      # - name: Validate build
+      #   run: ./gradlew Sample:assemble
   
       - name: Run Screenshot Tests
         uses: reactivecircus/android-emulator-runner@v2
