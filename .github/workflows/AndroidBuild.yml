@@ -5,30 +5,67 @@ on:
   push :
       branches : [master]
 
+env:
+  ANDROID_ARCH: x86_64
+  ANDROID_TARGET: google_apis_playstore
+  API_LEVEL: 33
+  ANDROID_BUILD_TOOLS_VERSION: 33.0.2
+  ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;33.0.2 platform-tools emulator
+  EMULATOR_TIMEOUT: 350
+  EMULATOR_NAME: nexus
+
 jobs:
-  build:
-    runs-on : ubuntu-latest
+  playwright-emulator:
+    timeout-minutes: 20
+    runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v3
+        
+      - name: Add avdmanager and sdkmanager to system PATH
+        run: |
+            echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }}" >> $GITHUB_PATH
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4.0.0
-        with:
-          java-version : '11'
-          distribution: 'adopt'
+      - name: Install Sdk
+        run: |
+           yes Y | sdkmanager --licenses
+           sdkmanager --install ${ANDROID_SDK_PACKAGES}
+  
+      - name: Build emulator
+        run: |
+            echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "${ANDROID_TARGET}/${ANDROID_ARCH}" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
 
-      - name : Build with Gradle
-        run : ./gradlew build
+      - name: Launch emulator
+        run: |
+          chmod +x ./start_emu_headless.sh
+          EMULATOR_TIMEOUT=$EMULATOR_TIMEOUT EMULATOR_NAME=$EMULATOR_NAME ./start_emu_headless.sh
 
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4.1.0
-        with:
-          name: EduFileShare.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+      - name : UI test
+        run : ./gradlew connectedCheck
 
-      - name: Fetch Sources
-        uses: actions/checkout@v2
+# jobs:
+#   build:
+#     runs-on : ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4.1.1
+
+#       - name: Setup Java JDK
+#         uses: actions/setup-java@v4.0.0
+#         with:
+#           java-version : '11'
+#           distribution: 'adopt'
+
+      # - name : Build with Gradle
+      #   run : ./gradlew build
+
+      # - name: Upload a Build Artifact
+      #   uses: actions/upload-artifact@v4.1.0
+      #   with:
+      #     name: EduFileShare.apk
+      #     path: app/build/outputs/apk/debug/app-debug.apk
+
+      # - name: Fetch Sources
+      #   uses: actions/checkout@v2
   
       # - name: Validate build
       #   run: ./gradlew Sample:assemble
@@ -44,26 +81,26 @@ jobs:
       # - name: test install-sdk
       #   run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
       #   working-directory: install-sdk
-      - name: test emulator-run-cmd
-        run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
-        working-directory: emulator-run-cmd
-      - uses: ./install-sdk
-        name: install sdk
-      - run: sdkmanager platform-tools
-      - run: adb devices
-      - name: Enable KVM
-        run: |
-         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-         sudo udevadm control --reload-rules
-         sudo udevadm trigger --name-match=kvm
-      - uses: ./emulator-run-cmd
-      - name: Run Screenshot Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 29
-          target: google_apis
-          profile: pixel_3a
-          script: ./gradlew connectedCheck
+      # - name: test emulator-run-cmd
+      #   run: npm config delete prefix && source ~/.nvm/nvm.sh && nvm install v16.15.0 && npm install && npm ci && npm run build
+      #   working-directory: emulator-run-cmd
+      # - uses: ./install-sdk
+      #   name: install sdk
+      # - run: sdkmanager platform-tools
+      # - run: adb devices
+      # - name: Enable KVM
+      #   run: |
+      #    echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+      #    sudo udevadm control --reload-rules
+      #    sudo udevadm trigger --name-match=kvm
+      # - uses: ./emulator-run-cmd
+      # - name: Run Screenshot Tests
+      #   uses: reactivecircus/android-emulator-runner@v2
+      #   with:
+      #     api-level: 29
+      #     target: google_apis
+      #     profile: pixel_3a
+      #     script: ./gradlew connectedCheck
 
 
 # name: "Test"
