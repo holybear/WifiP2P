@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Android SDK Components
         run: |
-          echo "y" | sdkmanager "build-tools; platform-tools; emulator; system-image:29"  # Adjust API level
+          echo "y" | sdkmanager "build-tools;29.0.0  platform-tools;29.0.0 emulator; system-image:29"  # Adjust API level
 
       - name: Create Emulator with Custom Configuration
         run: |
