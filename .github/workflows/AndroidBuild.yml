@@ -1,52 +1,96 @@
-name: AndroidBuild
-on:
-  pull_request :
-    branches : [ master]
-  push :
-      branches : [master]
+name: Run Instrumentation Tests with Custom Emulator
 
-env:
-  ANDROID_ARCH: x86_64
-  ANDROID_TARGET: google_apis_playstore
-  API_LEVEL: 31
-  ANDROID_BUILD_TOOLS_VERSION: 31.0.0
-  ANDROID_SDK_PACKAGES: system-images;android-31;google_apis_playstore;x86_64 platforms;android-31 build-tools;31.0.0 platform-tools emulator
-  EMULATOR_TIMEOUT: 350
-  EMULATOR_NAME: nexus
+on:
+  push:
+    branches: [ master ]
 
 jobs:
-  playwright-emulator:
-    timeout-minutes: 20
-    runs-on: macos-latest
+  test:
+    runs-on: ubuntu-latest  # Or macOS-latest if using KVM
+
     steps:
-      - uses: actions/checkout@v3
-        
-      - name: Add avdmanager and sdkmanager to system PATH
-        run: |
-            echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }}" >> $GITHUB_PATH
+      - uses: actions/checkout@v2
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4.0.0
+      - name: Set up Java
+        uses: actions/setup-java@v2
         with:
-          java-version : '11'
-          distribution: 'adopt'
+          java-version: 11
+
+      - name: Install Android SDK Components
+        run: |
+          echo "y" | sdkmanager "build-tools; platform-tools; emulator; system-image:29"  # Adjust API level
+
+      - name: Create Emulator with Custom Configuration
+        run: |
+          sh create_avd.sh
+
+      - name: Enable KVM (if on macOS)
+        run: sudo /dev/kvm  # Only needed on macOS
+
+      - name: Launch Emulator
+        run: emulator -avd my_emulator
+
+      - name: Build Project and APKs
+        run: ./gradlew assembleDebug connectedAndroidTest
+
+      - name: Run Instrumentation Tests
+        run: ./gradlew connectedAndroidTest -PdisableOfflineChecks
+
+      - name: Upload Test Results (optional)
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: app/build/reports/androidTests/connected/
+
+# name: AndroidBuild
+# on:
+#   pull_request :
+#     branches : [ master]
+#   push :
+#       branches : [master]
+
+# env:
+#   ANDROID_ARCH: x86_64
+#   ANDROID_TARGET: google_apis_playstore
+#   API_LEVEL: 31
+#   ANDROID_BUILD_TOOLS_VERSION: 31.0.0
+#   ANDROID_SDK_PACKAGES: system-images;android-31;google_apis_playstore;x86_64 platforms;android-31 build-tools;31.0.0 platform-tools emulator
+#   EMULATOR_TIMEOUT: 350
+#   EMULATOR_NAME: nexus
+
+# jobs:
+#   playwright-emulator:
+#     timeout-minutes: 20
+#     runs-on: macos-latest
+#     steps:
+#       - uses: actions/checkout@v3
+        
+#       - name: Add avdmanager and sdkmanager to system PATH
+#         run: |
+#             echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }}" >> $GITHUB_PATH
+
+#       - name: Setup Java JDK
+#         uses: actions/setup-java@v4.0.0
+#         with:
+#           java-version : '11'
+#           distribution: 'adopt'
       
-      - name: Install Sdk
-        run: |
-           yes Y | sdkmanager --licenses
-           sdkmanager --install ${ANDROID_SDK_PACKAGES}
+#       - name: Install Sdk
+#         run: |
+#            yes Y | sdkmanager --licenses
+#            sdkmanager --install ${ANDROID_SDK_PACKAGES}
   
-      - name: Build emulator
-        run: |
-            echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "${ANDROID_TARGET}/${ANDROID_ARCH}" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
+#       - name: Build emulator
+#         run: |
+#             echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "${ANDROID_TARGET}/${ANDROID_ARCH}" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
 
-      - name: Launch emulator
-        run: |
-          chmod +x ./start_emu_headless.sh
-          EMULATOR_TIMEOUT=$EMULATOR_TIMEOUT EMULATOR_NAME=$EMULATOR_NAME ./start_emu_headless.sh
+#       - name: Launch emulator
+#         run: |
+#           chmod +x ./start_emu_headless.sh
+#           EMULATOR_TIMEOUT=$EMULATOR_TIMEOUT EMULATOR_NAME=$EMULATOR_NAME ./start_emu_headless.sh
 
-      - name : UI test
-        run : ./gradlew connectedCheck
+#       - name : UI test
+#         run : ./gradlew connectedCheck
 
 # jobs:
 #   build:
